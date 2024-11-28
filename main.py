@@ -10,7 +10,6 @@ def main():
     target_language = input("Enter the target language for translation (e.g., Japanese): ").strip()
 
     # Step 2: Record and transcribe speech
-    print("Recording audio... Please speak.")
     input_text = speech_to_text()
     print(f"Transcribed Text: {input_text}")
 
@@ -18,7 +17,7 @@ def main():
     print(f"Translating text to {target_language}...")
     translated_text = translate_text(
         model_name="llama3.2",
-        target_language=target_language,
+        target_language=target_language, 
         text_to_translate=input_text,
     )
     print(f"Translated Text: {translated_text}")

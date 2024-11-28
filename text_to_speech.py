@@ -6,7 +6,7 @@ LANGUAGE = "ja"                         # Target language
 SPEAKER_NAME = "male_1"                 # Fixed default speaker
 OUTPUT_PATH = "output.wav"              # Fixed output file path
 
-def text_to_speech_fixed(text, temperature=0.3, repetition_penalty=1):
+def text_to_speech_fixed(text, temperature=0.4, repetition_penalty=1):
     """
     Generate speech from text using the OuteTTS library with fixed configuration.
 

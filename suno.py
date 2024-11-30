@@ -14,7 +14,7 @@ model = BarkModel.from_pretrained("suno/bark-small", torch_dtype=torch.float16).
 voice_preset = "v2/en_speaker_6"
 
 # Prepare input and move tensors to the correct device
-inputs = processor("[music] Hey, this is Gaurav", voice_preset=voice_preset, return_tensors="pt")
+inputs = processor("[music]Hey, this is Gaurav", voice_preset=voice_preset, return_tensors="pt")
 for key, value in inputs.items():
     inputs[key] = value.to(device)  # Ensure inputs are on the same device as the model
 

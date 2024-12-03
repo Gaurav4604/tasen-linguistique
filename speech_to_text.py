@@ -1,7 +1,8 @@
 import torch
-from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, BitsAndBytesConfig
 import pyaudio
 import numpy as np
+
 
 def initialize_device():
     """Initialize the device and torch dtype."""
@@ -9,34 +10,48 @@ def initialize_device():
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
     return device, torch_dtype
 
+
 def load_model_and_processor(model_id, device, torch_dtype):
     """Load the Whisper model and processor."""
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+    )
     model = AutoModelForSpeechSeq2Seq.from_pretrained(
-        model_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
+        model_id,
+        low_cpu_mem_usage=True,
+        use_safetensors=True,
+        torch_dtype=torch_dtype,
+        attn_implementation="sdpa",
+        quantization_config=bnb_config,
     ).to(device)
     processor = AutoProcessor.from_pretrained(model_id)
     return model, processor
 
-def record_audio(rate=16000, channels=1, chunk=1024, max_duration=5):
+
+def record_audio(rate=16000, channels=1, chunk=1024, max_duration=4):
     """
     Record audio from the microphone.
-    
+
     Args:
         rate: Sampling rate (default 16kHz).
         channels: Number of audio channels (default 1 for mono).
         chunk: Size of audio buffer (default 1024).
         max_duration: Maximum duration of recording in seconds (default 5).
-    
+
     Returns:
         A NumPy array containing the recorded audio data.
     """
     audio = pyaudio.PyAudio()
-    stream = audio.open(format=pyaudio.paInt16, channels=channels,
-                        rate=rate, input=True, frames_per_buffer=chunk)
+    stream = audio.open(
+        format=pyaudio.paInt16,
+        channels=channels,
+        rate=rate,
+        input=True,
+        frames_per_buffer=chunk,
+    )
 
-    print("Listening for trigger word...")
+    print("Listening...")
     frames = []
-
     try:
         for _ in range(0, int(rate / chunk * max_duration)):
             data = stream.read(chunk, exception_on_overflow=False)
@@ -49,13 +64,18 @@ def record_audio(rate=16000, channels=1, chunk=1024, max_duration=5):
         audio.terminate()
 
     # Convert frames to NumPy array
-    audio_data = np.frombuffer(b"".join(frames), dtype=np.int16).astype(np.float32) / 32768.0
+    audio_data = (
+        np.frombuffer(b"".join(frames), dtype=np.int16).astype(np.float32) / 32768.0
+    )
     return audio_data
 
-def transcribe_audio(audio_data, processor, model, device, torch_dtype, sampling_rate=16000):
+
+def transcribe_audio(
+    audio_data, processor, model, device, torch_dtype, sampling_rate=16000
+):
     """
     Transcribe audio data into text.
-    
+
     Args:
         audio_data: NumPy array of audio data.
         processor: Whisper processor.
@@ -63,19 +83,20 @@ def transcribe_audio(audio_data, processor, model, device, torch_dtype, sampling
         device: Torch device.
         torch_dtype: Torch dtype.
         sampling_rate: Sampling rate of the audio (default 16kHz).
-    
+
     Returns:
         Transcription string.
     """
     # Prepare input features
-    inputs = processor(
-        audio_data, sampling_rate=sampling_rate, return_tensors="pt"
-    ).to(device, torch_dtype)
+    inputs = processor(audio_data, sampling_rate=sampling_rate, return_tensors="pt").to(
+        device, torch_dtype
+    )
 
     # Generate transcription
     result = model.generate(inputs["input_features"])
     transcription = processor.batch_decode(result, skip_special_tokens=True)[0]
     return transcription
+
 
 def perform_action(trigger_word):
     """Define actions to perform based on the detected trigger word."""
@@ -87,6 +108,7 @@ def perform_action(trigger_word):
         print("Action: Playing music.")
     else:
         print("No action defined for this trigger word.")
+
 
 def trigger_word_detection():
     """Main function for trigger word detection."""
@@ -103,15 +125,20 @@ def trigger_word_detection():
         audio_data = record_audio()
 
         # Transcribe audio
-        transcription = transcribe_audio(audio_data, processor, model, device, torch_dtype)
+        transcription = transcribe_audio(
+            audio_data, processor, model, device, torch_dtype
+        )
         print(f"Transcription: {transcription}")
 
+        if "end" in trigger_words:
+            return
         # Check for trigger words
-        for trigger_word in trigger_words:
-            if trigger_word in transcription.lower():
-                print(f"Trigger word detected: '{trigger_word}'")
-                perform_action(trigger_word)
-                return  # Exit after performing an action
+        # for trigger_word in trigger_words:
+        #     if trigger_word in transcription.lower():
+        #         print(f"Trigger word detected: '{trigger_word}'")
+        #         perform_action(trigger_word)
+        #         return  # Exit after performing an action
+
 
 if __name__ == "__main__":
     trigger_word_detection()

@@ -6,7 +6,7 @@ from openwakeword.model import Model
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
-CHUNK = 1280  # Number of audio samples per frame
+CHUNK = 320  # Number of audio samples per frame
 
 audio = pyaudio.PyAudio()
 mic_stream = audio.open(

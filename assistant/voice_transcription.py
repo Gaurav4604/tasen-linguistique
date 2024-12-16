@@ -24,7 +24,7 @@ def main():
     )
     parser.add_argument(
         "--record_timeout",
-        default=2,
+        default=1,
         help="How real time the recording is in seconds.",
         type=float,
     )
@@ -73,9 +73,9 @@ def main():
         source = sr.Microphone(sample_rate=16000)
 
     # Load / Download model
-    model = args.model
-    if args.model != "large" and not args.non_english:
-        model = model + ".en"
+    model = "base.en"
+    # if args.model != "large" and not args.non_english:
+    #     model = model + ".en"
     audio_model = whisper.load_model(model)
 
     record_timeout = args.record_timeout

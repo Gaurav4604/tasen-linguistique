@@ -18,13 +18,13 @@ def main():
 
     parser.add_argument(
         "--energy_threshold",
-        default=1000,
+        default=500,
         help="Energy level for mic to detect.",
         type=int,
     )
     parser.add_argument(
         "--record_timeout",
-        default=1,
+        default=0.5,
         help="How real time the recording is in seconds.",
         type=float,
     )
@@ -73,7 +73,7 @@ def main():
         source = sr.Microphone(sample_rate=16000)
 
     # Load / Download model
-    model = "base.en"
+    model = "tiny.en"
     # if args.model != "large" and not args.non_english:
     #     model = model + ".en"
     audio_model = whisper.load_model(model)
@@ -142,7 +142,7 @@ def main():
                 if phrase_complete:
                     transcription.append(text)
                 else:
-                    transcription[-1] = text
+                    transcription[-1] = transcription[-1] + " " + text
 
                 # Clear the console to reprint the updated transcription.
                 os.system("cls" if os.name == "nt" else "clear")
@@ -152,7 +152,7 @@ def main():
                 print("", end="", flush=True)
             else:
                 # Infinite loops are bad for processors, must sleep.
-                sleep(0.25)
+                sleep(0.1)
         except KeyboardInterrupt:
             break
 
